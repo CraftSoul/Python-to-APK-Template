@@ -89,8 +89,8 @@ jobs:
         export P4A_RELEASE_KEYSTORE_PASSWD="android"
         export P4A_RELEASE_KEYALIAS_PASSWD="android"
         
-        buildozer -v android clean 2>&1 | tee clean.log
-        buildozer -v android update 2>&1 | tee update.log
+        #buildozer -v android clean 2>&1 | tee clean.log
+        #buildozer -v android update 2>&1 | tee update.log
         buildozer -v android release 2>&1 | tee buildozer.log
         
         #查找所有APK和AAB文件并复制到当前目录 find all APK and AAB files and copy them to the current directory
@@ -134,6 +134,6 @@ jobs:
         name: build-logs
         path: |
           buildozer.log
-          clean.log
-          update.log
+          #clean.log
+          #update.log
         retention-days: 7

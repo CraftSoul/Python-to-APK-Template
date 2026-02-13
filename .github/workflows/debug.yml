@@ -63,8 +63,8 @@ jobs:
         export USE_COLORS=0
         
         #开始构筑 start building
-        buildozer -v android clean 2>&1 | tee clean.log
-        buildozer -v android update 2>&1 | tee update.log
+        #buildozer -v android clean 2>&1 | tee clean.log
+        #buildozer -v android update 2>&1 | tee update.log
         buildozer -v android debug 2>&1 | tee buildozer.log
         
         #查找所有APK文件并复制到bin目录 find all APK files and copy them to the bin directory
@@ -97,6 +97,6 @@ jobs:
         name: build-logs
         path: |
           buildozer.log
-          clean.log
-          update.log
+          #clean.log
+          #update.log
         retention-days: 7
