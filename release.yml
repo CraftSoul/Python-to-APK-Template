@@ -1,0 +1,141 @@
+name: Build Kivy Android APK In Release Mode
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  checks: read
+
+env:
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+  ANDROID_HOME: /usr/local/lib/android/sdk
+  JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
+  CYTHON_LANGUAGE_LEVEL: "3"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.java-home=$JAVA_HOME -Dorg.gradle.jvmargs=-Xmx2048m"
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Java 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'#3.9以上cython无long The version above 3.9 of cython has no long integer
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+            git zip unzip \
+            python3-pip autoconf automake libtool \
+            pkg-config zlib1g-dev libncurses5-dev \
+            libncursesw5-dev cmake libffi-dev libssl-dev \
+            curl unzip openjdk-17-jdk libltdl-dev
+
+    - name: Install Buildozer and dependencies
+      run: |
+        python -m pip install --upgrade pip
+        #下载依赖库 add your requirements
+        pip install buildozer cython==0.29.33 kivy kivymd
+        #何意味 You will need it
+        pip install python-for-android
+
+    - name: Generate signing key (if not exists)
+      id: generate_key
+      run: |
+        if [ ! -f "DomainName.PackageName.keystore" ]; then
+          echo "Creating new keystore..."
+          keytool -genkey -v \
+            -keystore DomainName.PackageName.keystore \
+            -alias DomainName.PackageName \
+            -keyalg RSA -keysize 2048 \
+            -validity 10000 \
+            -storepass android \
+            -keypass android \
+            -dname "CN=Unknown, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown"
+          echo "KEY_CREATED=true" >> $GITHUB_OUTPUT
+        else
+          echo "Using existing keystore."
+          echo "KEY_CREATED=false" >> $GITHUB_OUTPUT
+        fi
+        #好吧,我不知道这玩意儿咋用,不要打我口牙QAQ
+        #Actually,I don't know how to use it well,please let me go.QAQ
+
+    - name: Build APK with Buildozer (Release)
+      run: |
+        export PATH="$HOME/.local/bin:$PATH"
+        echo "Let's have a check:"
+        java -version
+        python --version
+        buildozer --version
+        
+        #设置环境变量解决网络问题 set environment variables to solve network problems
+        export BUILDODER_ALLOW_PLATFORM_EXEC=1
+        export USE_COLORS=0
+        
+        #设置p4a签名环境变量 set p4a signature environment variables
+        export P4A_RELEASE_KEYSTORE="$PWD/DomainName.PackageName.keystore"
+        export P4A_RELEASE_KEYALIAS="DomainName.PackageName"
+        export P4A_RELEASE_KEYSTORE_PASSWD="android"
+        export P4A_RELEASE_KEYALIAS_PASSWD="android"
+        
+        #buildozer -v android clean 2>&1 | tee clean.log
+        #buildozer -v android update 2>&1 | tee update.log
+        buildozer -v android release 2>&1 | tee buildozer.log
+        
+        #查找所有APK和AAB文件并复制到当前目录 find all APK and AAB files and copy them to the current directory
+        find . -name "*.apk" -exec cp {} ./ \; 2>/dev/null || true
+        find . -name "*.aab" -exec cp {} ./ \; 2>/dev/null || true
+
+    - name: Check if APK/AAB was built
+      id: check-build
+      run: |
+        if ls *.apk 1> /dev/null 2>&1 || ls *.aab 1> /dev/null 2>&1; then
+          echo "BUILD_FINAL_SUCCESS=true" >> $GITHUB_OUTPUT
+          echo "Found built files:"
+          ls -la *.apk *.aab 2>/dev/null || true
+        else
+          echo "BUILD_FINAL_SUCCESS=false" >> $GITHUB_OUTPUT
+          echo "Didn't found built files."
+          echo "Check the build directory."
+          find .buildozer -name "*.apk" -o -name "*.aab" -type f 2>/dev/null | head -10
+        fi
+
+    - name: Upload APK/AAB artifact
+      if: steps.check-build.outputs.BUILD_FINAL_SUCCESS == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: kivy-app-build
+        path: bin/*
+        retention-days: 30
+
+    - name: Upload signing key (if newly created)
+      if: steps.generate_key.outputs.KEY_CREATED == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-keystore
+        path: DomainName.PackageName.keystore
+        retention-days: 1
+
+    - name: Upload build logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-logs
+        path: |
+          buildozer.log
+          #clean.log
+          #update.log
+        retention-days: 7
