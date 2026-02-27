@@ -24,9 +24,11 @@ Make sure your project root contains `buildozer.spec`(changed parameters),`main.
 
 Replace `RepositoryName`,`DomainName`,`PackageName` in `buildozer.spec` and `release.yml`.
 
-删除`debug.yml`和`release.yml`中的`非法注释`(O∆O)。
+===============================
+删除`非法注释`(O∆O)。
 
-Remove `illegal comments` in `debug.yml` and `release.yml`(O∆O).
+Remove `illegal comments`(O∆O).
+===============================
 
 ### 2. 设置工作流程 | Setup Workflows
 本仓库提供两个工作流程:
