@@ -32,7 +32,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.9'#3.9以上cython无long the version above 3.9 of cython has no long integer
+        python-version: '3.9'#3.9以上cython无long The version above 3.9 of cython has no long integer
 
     - name: Install system dependencies
       run: |
@@ -47,8 +47,10 @@ jobs:
     - name: Install Buildozer and dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install buildozer cython==0.29.33 kivy kivymd#下载依赖库 add your requirements
-        pip install python-for-android#何意味 you will need it
+        #下载依赖库 add your requirements
+        pip install buildozer cython==0.29.33 kivy kivymd
+        #何意味 You will need it
+        pip install python-for-android
 
     - name: Build APK with Buildozer
       run: |
